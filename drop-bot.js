@@ -17,6 +17,7 @@ const RULES = [
   { symbol: "WDCX", drop_threshold_pct: -20, quantity: "1" },
   { symbol: "SNDU", drop_threshold_pct: -20, quantity: "1" },
   { symbol: "CRWL", drop_threshold_pct: -20, quantity: "1" },
+  { symbol: "MVLL", drop_threshold_pct: -20, quantity: "1" },
 ];
 
 async function getQuoteData(symbol) {
