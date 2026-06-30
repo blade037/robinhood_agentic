@@ -1,7 +1,8 @@
 /**
- * INTW Percentage Drop Buy Bot
- * Checks INTW's current price vs previous day's close via Twelve Data API.
- * Places a market buy via Robinhood MCP when the drop is -20% or worse.
+ * Multi-Symbol Percentage Drop Buy Bot
+ * Checks each symbol's current price vs previous day's close via Twelve Data API.
+ * Places a market buy via Robinhood MCP when the drop hits the threshold —
+ * limited to ONE buy per symbol per day.
  *
  * Required environment variables:
  *   ANTHROPIC_API_KEY   - Your Anthropic API key
@@ -9,7 +10,11 @@
  *   RH_ACCOUNT_NUMBER   - Your Robinhood agentic account number
  */
 
+const fs = require("fs");
+const path = require("path");
+
 const RH_MCP_URL = "https://agent.robinhood.com/mcp/trading";
+const STATE_FILE = path.join(__dirname, "bought-today.json");
 
 // Add or remove symbols/rules here
 const RULES = [
@@ -17,8 +22,30 @@ const RULES = [
   { symbol: "WDCX", drop_threshold_pct: -20, quantity: "1" },
   { symbol: "SNDU", drop_threshold_pct: -20, quantity: "1" },
   { symbol: "CRWL", drop_threshold_pct: -20, quantity: "1" },
-  { symbol: "MVLL", drop_threshold_pct: -20, quantity: "1" },
 ];
+
+function todayKey() {
+  // YYYY-MM-DD in UTC
+  return new Date().toISOString().slice(0, 10);
+}
+
+function loadState() {
+  try {
+    const raw = fs.readFileSync(STATE_FILE, "utf8");
+    const state = JSON.parse(raw);
+    // Reset if the stored date isn't today
+    if (state.date !== todayKey()) {
+      return { date: todayKey(), bought: [] };
+    }
+    return state;
+  } catch {
+    return { date: todayKey(), bought: [] };
+  }
+}
+
+function saveState(state) {
+  fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+}
 
 async function getQuoteData(symbol) {
   const url = `https://api.twelvedata.com/quote?symbol=${symbol}&apikey=${process.env.TWELVE_DATA_API_KEY}`;
@@ -77,8 +104,14 @@ After placing, respond ONLY with valid JSON (no markdown):
   }
 }
 
-async function processRule({ symbol, drop_threshold_pct, quantity }) {
+async function processRule({ symbol, drop_threshold_pct, quantity }, state) {
   console.log(`\n--- ${symbol} ---`);
+
+  // Skip if already bought today
+  if (state.bought.includes(symbol)) {
+    console.log(`Already bought ${symbol} today. Skipping.`);
+    return;
+  }
 
   let quoteData;
   try {
@@ -107,6 +140,7 @@ async function processRule({ symbol, drop_threshold_pct, quantity }) {
     const order = await placeOrder(symbol, quantity, quoteData.currentPrice);
     if (order.success !== false) {
       console.log(`✅ Order placed: ${order.order_id || order.message}`);
+      state.bought.push(symbol); // Mark as bought today
     } else {
       console.error(`❌ Order failed: ${order.message}`);
     }
@@ -117,14 +151,18 @@ async function processRule({ symbol, drop_threshold_pct, quantity }) {
 
 async function main() {
   console.log(
-    `\n[${new Date().toISOString()}] INTW Drop Bot starting — checking ${RULES.length} rule(s)...`
+    `\n[${new Date().toISOString()}] Drop Bot starting — checking ${RULES.length} rule(s)...`
   );
 
+  const state = loadState();
+  console.log(`State date: ${state.date} | Already bought today: ${state.bought.join(", ") || "none"}`);
+
   for (const rule of RULES) {
-    await processRule(rule);
+    await processRule(rule, state);
   }
 
-  console.log(`\n[${new Date().toISOString()}] Done.`);
+  saveState(state);
+  console.log(`\n[${new Date().toISOString()}] Done. Bought today: ${state.bought.join(", ") || "none"}`);
 }
 
 main();
