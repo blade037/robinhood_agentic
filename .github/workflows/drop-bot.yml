@@ -1,4 +1,4 @@
-name: INTW Drop Bot
+name: Drop Bot
 
 on:
   schedule:
