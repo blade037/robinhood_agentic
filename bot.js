@@ -17,6 +17,9 @@ const RH_MCP_URL = "https://agent.robinhood.com/mcp/trading";
 const RULES = [
   { symbol: "MVLL",  rsi_threshold: 30, quantity: "1" },
   { symbol: "SNDU", rsi_threshold: 30, quantity: "1" },
+  { symbol: "CRWL", rsi_threshold: 30, quantity: "1" },
+  { symbol: "WDCX", rsi_threshold: 30, quantity: "1" },
+  { symbol: "INTW", rsi_threshold: 30, quantity: "1" },
 ];
 
 async function getRSI(symbol) {
