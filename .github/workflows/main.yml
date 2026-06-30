@@ -2,8 +2,8 @@ name: RSI Buy Bot
 
 on:
   schedule:
-    # Runs every 15 minutes, Mon–Fri, 11:00 AM – 9:00 PM UTC
-    - cron: "*/15 11-21 * * 1-5"
+    # Runs every 15 minutes, Mon–Fri, 11:00 AM – 11:00 PM UTC
+    - cron: "*/15 11-23 * * 1-5"
 
   # Allow manual trigger from GitHub Actions UI
   workflow_dispatch:
