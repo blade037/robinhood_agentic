@@ -1,4 +1,4 @@
-name: Drop Bot
+name: INTW Drop Bot
 
 on:
   schedule:
@@ -7,6 +7,9 @@ on:
 
   # Allow manual trigger from GitHub Actions UI
   workflow_dispatch:
+
+permissions:
+  contents: write  # needed to commit the daily state file back to the repo
 
 jobs:
   run-bot:
@@ -28,3 +31,11 @@ jobs:
           TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
           RH_ACCOUNT_NUMBER: ${{ secrets.RH_ACCOUNT_NUMBER }}
         run: node drop-bot.js
+
+      - name: Commit updated state file
+        run: |
+          git config user.name "rsi-bot"
+          git config user.email "rsi-bot@users.noreply.github.com"
+          git add bought-today.json
+          git diff --staged --quiet || git commit -m "Update daily buy state [skip ci]"
+          git push
